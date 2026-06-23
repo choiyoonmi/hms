@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>해피트리 학부모 페이지</title>
+  <?!= include('style'); ?>
+</head>
+<body>
+  <header class="top parentTop">
+    <div>
+      <h1>🌳 해피트리 학부모 페이지</h1>
+      <p>자녀의 성장기록과 월간 리포트를 확인하고 상담을 신청할 수 있습니다.</p>
+    </div>
+  </header>
+
+  <main class="wrap parentWrap">
+    <section id="loginPanel" class="panel">
+      <h2>학부모 인증</h2>
+      <p class="muted">학생명과 전화번호 뒤 4자리 인증번호를 입력해주세요.</p>
+      <label>학생명<input id="loginStudent" placeholder="예: 김민준"></label>
+      <label>인증번호<input id="loginPin" type="password" placeholder="전화번호 뒤 4자리"></label>
+      <button class="primary wide" onclick="loginParent()">확인</button>
+      <div id="loginMsg"></div>
+    </section>
+
+    <section id="portalPanel" class="panel hidden">
+      <div class="row between">
+        <h2 id="studentTitle">성장기록</h2>
+        <button onclick="logout()">로그아웃</button>
+      </div>
+      <div id="reportBox"></div>
+      <div class="buttonRow">
+        <button id="pdfBtn" onclick="openPdf()">📄 성장리포트 PDF 보기</button>
+        <button onclick="showConsultForm()">📝 상담 신청</button>
+      </div>
+      <section id="consultBox" class="item hidden">
+        <h3>상담 신청</h3>
+        <label>보호자명<input id="parentName" placeholder="보호자명"></label>
+        <label>상담내용<textarea id="consultMsg" rows="4" placeholder="상담하고 싶은 내용을 적어주세요."></textarea></label>
+        <div class="grid formgrid">
+          <label>희망날짜<input id="preferredDate" type="date"></label>
+          <label>희망시간<input id="preferredTime" placeholder="예: 오후 3시"></label>
+        </div>
+        <button class="primary" onclick="submitConsultation()">상담 신청하기</button>
+        <div id="consultResult"></div>
+      </section>
+      <section>
+        <h3>공지사항</h3>
+        <div id="noticeList"></div>
+      </section>
+    </section>
+  </main>
+
+<script>
+let currentStudent = '';
+let currentReport = null;
+
+function server(fn, ...args) {
+  return new Promise((resolve, reject) => {
+    google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[fn](...args);
+  });
+}
+
+function getParam(name){return new URLSearchParams(location.search).get(name)||'';}
+
+async function loginParent(){
+  const name = loginStudent.value.trim();
+  const pin = loginPin.value.trim();
+  if(!name || !pin){loginMsg.innerHTML='<div class="error">학생명과 인증번호를 입력해주세요.</div>';return;}
+  loginMsg.textContent='확인 중...';
+  try{
+    const r = await server('parentLogin', name, pin);
+    if(!r.ok){loginMsg.innerHTML='<div class="error">'+r.message+'</div>';return;}
+    currentStudent = r.studentName;
+    loginPanel.classList.add('hidden');
+    portalPanel.classList.remove('hidden');
+    loadParentData();
+  }catch(e){loginMsg.innerHTML='<div class="error">'+e.message+'</div>';}
+}
+
+async function loadParentData(){
+  reportBox.textContent='성장기록을 불러오는 중...';
+  try{
+    const data = await server('getParentPortalData', currentStudent);
+    currentReport = data.report;
+    studentTitle.textContent = `${currentReport.studentName} 성장기록`;
+    reportBox.innerHTML = `
+      <div class="cards">
+        <div class="card"><span>성장온도</span><b>${currentReport.temp}</b></div>
+        <div class="card"><span>평균 성장지수</span><b>${currentReport.avgTotal}</b></div>
+        <div class="card"><span>이번 달 기록</span><b>${currentReport.count}회</b></div>
+      </div>
+      <div class="item">
+        <h3>최근 성장 요약</h3>
+        <p>학습습관 ${currentReport.avgHabit} / 집중도 ${currentReport.avgFocus} / 이해도 ${currentReport.avgUnderstanding} / 수행도 ${currentReport.avgPerformance}</p>
+        <p>${currentReport.comment}</p>
+      </div>`;
+    pdfBtn.disabled = !currentReport.pdfUrl;
+    noticeList.innerHTML = (data.notices||[]).length ? data.notices.map(n=>`<div class="item"><b>${n['제목']||''}</b><br><span class="muted">${n['날짜']||''}</span><p>${n['내용']||''}</p></div>`).join('') : '<div class="muted">등록된 공지사항이 없습니다.</div>';
+  }catch(e){reportBox.innerHTML='<div class="error">'+e.message+'</div>';}
+}
+function openPdf(){if(currentReport && currentReport.pdfUrl) window.open(currentReport.pdfUrl, '_blank'); else alert('PDF가 아직 생성되지 않았습니다.');}
+function showConsultForm(){consultBox.classList.toggle('hidden');}
+async function submitConsultation(){
+  if(!consultMsg.value.trim()){alert('상담내용을 입력해주세요.');return;}
+  try{
+    await server('submitParentConsultation', {studentName:currentStudent,parentName:parentName.value,message:consultMsg.value,preferredDate:preferredDate.value,preferredTime:preferredTime.value});
+    consultResult.innerHTML='<div class="ok">상담 신청이 접수되었습니다.</div>';
+    consultMsg.value=''; preferredDate.value=''; preferredTime.value='';
+  }catch(e){consultResult.innerHTML='<div class="error">'+e.message+'</div>';}
+}
+function logout(){location.reload();}
+(function init(){const s=getParam('student'); if(s) loginStudent.value=decodeURIComponent(s);})();
+</script>
+</body>
+</html>
