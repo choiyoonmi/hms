@@ -1,194 +1,42 @@
 <!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>해피트리 HMS V33</title>
-  <?!= include('style'); ?>
-</head>
+<html><head><base target="_top"><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><?!= include('style'); ?></head>
 <body>
-  <header class="top">
-    <div>
-      <h1>🌳 해피트리 HMS V33</h1>
-      <p>선생님은 30초 기록, 원장님은 성장관리와 학부모 발송을 한 번에 확인합니다.</p>
-    </div>
-    <button class="primary" onclick="openAdminLogin()">⚙️ 관리자</button>
-  </header>
-
-  <main class="wrap">
-    <section id="teacherPanel" class="panel">
-      <h2>선생님 성장기록 입력</h2>
-      <div class="grid formgrid">
-        <label>선생님<select id="teacher"></select></label>
-        <label>과목<select id="subject"><option>국어</option><option>영어</option><option>수학</option></select></label>
-        <label>반 선택<select id="className" onchange="renderStudents()"></select></label>
-        <label>학생<select id="student"></select></label>
-      </div>
-
-      <div class="scoreBlock">
-        <div><b>학습습관</b><p>숙제·준비물·성실성</p><div class="score" data-field="learningHabit"></div></div>
-        <div><b>집중도</b><p>수업 집중·참여도</p><div class="score" data-field="focus"></div></div>
-        <div><b>이해도</b><p>개념 이해·설명 이해</p><div class="score" data-field="understanding"></div></div>
-        <div><b>수행도</b><p>국어 독해/영어 해석/수학 해결력</p><div class="score" data-field="performance"></div></div>
-      </div>
-
-      <h3>특이사항 복수 선택</h3>
-      <div id="issues" class="chips"></div>
-      <label>메모<textarea id="memo" rows="3" placeholder="필요 시 간단히 입력"></textarea></label>
-      <button class="primary wide" onclick="saveEval()">저장하기</button>
-      <div id="teacherMsg"></div>
-    </section>
-
-    <section id="dashboardPanel" class="panel hidden">
-      <div class="row between">
-        <h2>오늘 성장관리 대시보드 <span id="today" class="muted"></span></h2>
-        <button onclick="loadDashboard()">🔄 새로고침</button>
-      </div>
-      <div id="dashMsg"></div>
-      <div class="cards">
-        <div class="card"><span>집중관리</span><b id="urgentCount">0</b></div>
-        <div class="card"><span>관심관리</span><b id="watchCount">0</b></div>
-        <div class="card"><span>정상</span><b id="normalCount">0</b></div>
-      </div>
-      <div class="buttonRow">
-        <button onclick="copySummary()">📋 오늘 요약 복사</button>
-        <button onclick="openReport()">📚 월간 성장리포트</button>
-        <button onclick="openSendCenter()">📨 학부모 발송센터</button>
-        <button onclick="showTeacher()">✏️ 선생님 입력</button>
-      </div>
-      <div class="twoCol">
-        <section><h3>🔴 집중관리</h3><div id="urgentList"></div></section>
-        <section><h3>🟡 관심관리</h3><div id="watchList"></div></section>
-        <section><h3>반별 기록 완료율</h3><div id="classStats"></div></section>
-        <section><h3>선생님별 기록 현황</h3><div id="teacherStats"></div></section>
-        <section><h3>📝 기록 대기 학생</h3><div id="waiting"></div></section>
-        <section><h3>🏷 최근 30일 특이사항</h3><div id="issueStats"></div></section>
-        <section><h3>🚨 반복관리 필요</h3><div id="riskList"></div></section>
-        <section><h3>학생별 최근 평균 낮은 순</h3><div id="summaryList"></div></section>
-      </div>
-    </section>
-
-    <section id="reportPanel" class="panel hidden">
-      <div class="row between"><h2>📚 월간 성장리포트</h2><button onclick="showDashboard()">대시보드</button></div>
-      <div class="grid formgrid">
-        <label>학생<select id="reportStudent"></select></label>
-        <label>월<input type="month" id="reportMonth"></label>
-      </div>
-      <div class="buttonRow">
-        <button onclick="previewReport()">미리보기</button>
-        <button onclick="makePdf()">PDF 생성</button>
-        <button onclick="copyParentMessage()">📋 학부모 문구 복사</button>
-      </div>
-      <div id="reportResult"></div>
-    </section>
-
-    <section id="sendPanel" class="panel hidden">
-      <div class="row between"><h2>📨 V33 학부모 발송센터</h2><button onclick="showDashboard()">대시보드</button></div>
-      <div class="grid formgrid">
-        <label>발송 월<input type="month" id="sendMonth"></label>
-        <label>반 선택<select id="sendClass"></select></label>
-      </div>
-      <div class="buttonRow">
-        <button onclick="loadSendCenter()">발송대상 불러오기</button>
-        <button onclick="bulkSendEmails()">📧 이메일 일괄 발송</button>
-      </div>
-      <p class="muted">학부모정보 시트에 이메일이 있는 학생만 이메일 발송됩니다. 카카오톡은 문구 복사 후 직접 발송합니다.</p>
-      <div id="sendMsg"></div>
-      <div id="sendList"></div>
-    </section>
-  </main>
-
-  <div id="adminOverlay" class="adminOverlay hidden">
-    <div class="loginBox">
-      <h2>관리자 로그인</h2>
-      <p class="muted">비밀번호는 화면에 표시되지 않습니다.</p>
-      <input id="adminPin" type="password" placeholder="비밀번호" onkeydown="if(event.key==='Enter') adminLogin()">
-      <div class="buttonRow right"><button onclick="closeAdminLogin()">취소</button><button class="primary" onclick="adminLogin()">확인</button></div>
-      <div id="loginMsg"></div>
-    </div>
-  </div>
-
+<header class="top"><h1>🌳 해피트리 HMS V33</h1><p>성장기록 · 리포트 · 학부모 발송센터</p></header>
+<main class="wrap">
+<div class="tabs"><button onclick="showTab('teacher')">선생님 입력</button><button onclick="openAdmin()">관리자</button><button onclick="showTab('report')">월간 리포트</button><button onclick="showTab('send')">학부모 발송센터</button></div>
+<section id="teacher" class="panel"><h2>선생님 성장기록</h2><div class="grid2"><label>선생님<select id="teacherName"></select></label><label>과목<select id="subject"><option>국어</option><option>영어</option><option>수학</option></select></label><label>반<select id="className" onchange="renderStudents()"></select></label><label>학생<select id="studentName"></select></label></div><h3>성장 점수</h3><div class="scoreGrid"><div><b>학습습관</b><div id="learningHabit" class="scores"></div></div><div><b>집중도</b><div id="focus" class="scores"></div></div><div><b>이해도</b><div id="understanding" class="scores"></div></div><div><b>수행도</b><div id="performance" class="scores"></div></div></div><h3>특이사항</h3><div id="issues" class="chips"></div><label>메모<textarea id="memo" rows="3"></textarea></label><button class="primary" onclick="saveEval()">저장하기</button><div id="teacherMsg"></div></section>
+<section id="dashboard" class="panel hidden"><h2>오늘 성장관리 대시보드 <small id="todayText"></small></h2><div id="dashMsg"></div><div class="cards"><div class="card">집중관리<b id="urgentCount">0</b></div><div class="card">관심관리<b id="watchCount">0</b></div><div class="card">정상<b id="normalCount">0</b></div></div><button onclick="loadDashboard()">새로고침</button><button onclick="copyTodaySummary()">오늘 요약 복사</button><h3>🔴 집중관리</h3><div id="urgentList"></div><h3>🟡 관심관리</h3><div id="watchList"></div><div class="grid2"><div><h3>반별 기록</h3><div id="classStats"></div></div><div><h3>선생님별 기록</h3><div id="teacherStats"></div></div></div><h3>기록 대기</h3><div id="waiting"></div></section>
+<section id="report" class="panel hidden"><h2>월간 성장리포트</h2><div class="grid2"><label>학생<select id="reportStudent"></select></label><label>월<input id="reportMonth" type="month"></label></div><button onclick="previewReport()">미리보기</button><button onclick="makePdf()">PDF 생성</button><button onclick="copyParentMessage()">학부모 문구 복사</button><div id="reportResult"></div></section>
+<section id="send" class="panel hidden"><h2>V33 학부모 발송센터</h2><div class="grid2"><label>월<input id="sendMonth" type="month"></label><label>반<select id="sendClass"><option>전체</option></select></label></div><button onclick="loadSendCenter()">대상 불러오기</button><button onclick="bulkSendEmails()">이메일 일괄 발송</button><div id="sendMsg"></div><div id="sendList"></div></section>
+</main>
+<div id="loginModal" class="modal hidden"><div class="loginBox"><h2>관리자 로그인</h2><input id="adminPin" type="password" placeholder="비밀번호"><button class="primary" onclick="doAdminLogin()">확인</button><button onclick="closeLogin()">취소</button><div id="loginMsg"></div></div></div>
 <script>
-let initial = {students:[], teachers:[], issues:{}};
-let scores = {learningHabit:null, focus:null, understanding:null, performance:null};
-let dash = null;
-let lastReport = null;
-
-function server(fn, ...args) {
-  return new Promise((resolve, reject) => {
-    google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)[fn](...args);
-  });
-}
-
-function showTeacher(){hideAll();document.getElementById('teacherPanel').classList.remove('hidden');}
-function showDashboard(){hideAll();document.getElementById('dashboardPanel').classList.remove('hidden');loadDashboard();}
-function openReport(){hideAll();document.getElementById('reportPanel').classList.remove('hidden');renderReportStudents();}
-function openSendCenter(){hideAll();document.getElementById('sendPanel').classList.remove('hidden');renderSendClass();loadSendCenter();}
-function hideAll(){['teacherPanel','dashboardPanel','reportPanel','sendPanel'].forEach(id=>document.getElementById(id).classList.add('hidden'));}
-
-async function init(){
-  try{
-    initial = await server('getInitialData');
-    renderTeachers(); renderClasses(); renderScoreButtons(); renderIssues(); renderReportStudents(); renderSendClass();
-    const month = (initial.today || '').slice(0,7);
-    document.getElementById('reportMonth').value = month;
-    document.getElementById('sendMonth').value = month;
-  }catch(e){
-    document.getElementById('teacherMsg').innerHTML = '<div class="error">초기 로딩 오류: '+e.message+'</div>';
-  }
-}
-function renderTeachers(){document.getElementById('teacher').innerHTML=(initial.teachers||[]).map(t=>`<option>${t['선생님명']}</option>`).join('');}
-function renderClasses(){const classes=[...new Set((initial.students||[]).map(s=>s['반명']).filter(Boolean))].sort();document.getElementById('className').innerHTML=classes.map(c=>`<option>${c}</option>`).join('');renderStudents();}
-function renderStudents(){const c=document.getElementById('className').value;document.getElementById('student').innerHTML=(initial.students||[]).filter(s=>s['반명']===c).map(s=>`<option>${s['학생명']}</option>`).join('');}
-function renderScoreButtons(){['learningHabit','focus','understanding','performance'].forEach(field=>{document.querySelector(`.score[data-field="${field}"]`).innerHTML=[1,2,3,4,5].map(n=>`<button type="button" onclick="setScore('${field}',${n},this)">${n}</button>`).join('');});}
-function setScore(field,n,btn){scores[field]=n;btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
-function renderIssues(){const m=initial.issues||{};document.getElementById('issues').innerHTML=Object.keys(m).map(k=>`<button type="button" data-code="${k}" onclick="toggleIssue(this)">${k}. ${m[k]}</button>`).join('');}
-function toggleIssue(btn){if(btn.dataset.code==='0'){document.querySelectorAll('#issues button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');return;}document.querySelector('#issues button[data-code="0"]')?.classList.remove('active');btn.classList.toggle('active');}
-async function saveEval(){
-  for(const f of Object.keys(scores)){if(scores[f]===null){alert('점수를 모두 선택해주세요.');return;}}
-  const issues=[...document.querySelectorAll('#issues button.active')].map(b=>b.dataset.code);
-  const payload={teacherName:teacher.value,subject:subject.value,className:className.value,studentName:student.value,learningHabit:scores.learningHabit,focus:scores.focus,understanding:scores.understanding,performance:scores.performance,issueCodes:issues.length?issues:['0'],memo:memo.value};
-  try{
-    const r=await server('saveEvaluation',payload);
-    teacherMsg.innerHTML=`<div class="ok">저장 완료: ${r.status} / 평균 ${r.avg}<br>${r.comment}</div>`;
-    memo.value=''; scores={learningHabit:null,focus:null,understanding:null,performance:null};
-    document.querySelectorAll('.score button,#issues button').forEach(b=>b.classList.remove('active'));
-  }catch(e){teacherMsg.innerHTML='<div class="error">저장 오류: '+e.message+'</div>';}
-}
-function openAdminLogin(){document.getElementById('adminOverlay').classList.remove('hidden');document.getElementById('adminPin').focus();}
-function closeAdminLogin(){document.getElementById('adminOverlay').classList.add('hidden');document.getElementById('adminPin').value='';}
-async function adminLogin(){
-  try{const ok=await server('verifyAdminPin',adminPin.value);if(ok){closeAdminLogin();showDashboard();}else loginMsg.innerHTML='<div class="error">비밀번호가 맞지 않습니다.</div>';}
-  catch(e){loginMsg.innerHTML='<div class="error">'+e.message+'</div>';}
-}
-async function loadDashboard(){
-  dashMsg.textContent='대시보드 로딩 중...';
-  try{
-    dash=await server('getDashboardData');
-    dashMsg.innerHTML=`<div class="ok">기준일 ${dash.today} / 오늘 입력 ${dash.totalToday}건 / 시트 연결 정상</div>`;
-    urgentCount.textContent=dash.urgent.length; watchCount.textContent=dash.watch.length; normalCount.textContent=dash.normal.length; today.textContent=dash.today;
-    renderList('urgentList',dash.urgent,rowItem); renderList('watchList',dash.watch,rowItem);
-    renderList('classStats',dash.classStats,c=>`<b>${c.className}</b> ${c.recorded}/${c.active}명 (${c.percent}%) · 🔴${c.urgent} 🟡${c.watch} 🟢${c.normal}`);
-    renderList('teacherStats',dash.teacherStats,t=>`<b>${t.teacherName}</b> ${t.count}건 · 🔴${t.urgent} 🟡${t.watch} 🟢${t.normal}`);
-    renderList('waiting',dash.waitingStudents,w=>`${w.className} ${w.studentName}`);
-    renderList('issueStats',dash.issueStats,i=>`${i.label} ${i.count}회`);
-    renderList('riskList',dash.repeatedRisk,s=>`${s.temp} <b>${s.studentName}</b> (${s.className}) 최근평균 ${s.recentAvg}`);
-    renderList('summaryList',dash.summary.slice(0,20),s=>`${s.temp} <b>${s.studentName}</b> (${s.className}) 최근평균 ${s.recentAvg} / ${s.count}회`);
-  }catch(e){dashMsg.innerHTML='<div class="error">대시보드 오류: '+e.message+'</div>';}
-}
-function rowItem(r){return `<b>${r['반명']||''} ${r['학생명']||''}</b> <span class="pill">${r['상태']||''}</span><br><span class="muted small">${r['과목']||''} / ${r['선생님명']||''} / 평균 ${r['평균']||''} / ${r['특이사항']||''}</span>`;}
-function renderList(id,arr,fn){const el=document.getElementById(id);if(!arr||!arr.length){el.innerHTML='<div class="muted">해당 없음</div>';return;}el.innerHTML=arr.map(x=>`<div class="item">${fn(x)}</div>`).join('');}
-function copySummary(){if(!dash){alert('대시보드를 먼저 불러오세요.');return;}const text=`🌳 오늘 성장관리 요약\n총 입력 ${dash.totalToday}건\n집중 ${dash.urgent.length}명 / 관심 ${dash.watch.length}명 / 정상 ${dash.normal.length}명`;navigator.clipboard.writeText(text);alert('복사되었습니다.');}
-function renderReportStudents(){document.getElementById('reportStudent').innerHTML=(initial.students||[]).map(s=>`<option>${s['학생명']}</option>`).join('');}
-async function previewReport(){lastReport=await server('getMonthlyReport',reportStudent.value,reportMonth.value);reportResult.innerHTML=`<div class="item"><h3>${lastReport.studentName} ${lastReport.monthKey}</h3><p>평가 ${lastReport.count}회 / 평균 ${lastReport.avgTotal} / ${lastReport.temp}</p><p>${lastReport.comment}</p>${lastReport.pdfUrl?`<p><a target="_blank" href="${lastReport.pdfUrl}">PDF 열기</a></p>`:''}</div>`;}
-async function makePdf(){try{const r=await server('createMonthlyPdf',reportStudent.value,reportMonth.value);reportResult.innerHTML=`<div class="ok">PDF 생성 완료<br><a href="${r.fileUrl}" target="_blank">${r.fileName} 열기</a></div>`;}catch(e){reportResult.innerHTML='<div class="error">PDF 생성 오류: '+e.message+'</div>';}}
-async function copyParentMessage(){try{const r=await server('makeParentMessage',reportStudent.value,reportMonth.value);navigator.clipboard.writeText(r.text);reportResult.innerHTML=`<div class="ok">학부모 문구가 복사되었습니다.</div><pre>${r.text}</pre>`;}catch(e){reportResult.innerHTML='<div class="error">문구 생성 오류: '+e.message+'</div>';}}
-function renderSendClass(){const classes=['전체',...[...new Set((initial.students||[]).map(s=>s['반명']).filter(Boolean))].sort()];document.getElementById('sendClass').innerHTML=classes.map(c=>`<option>${c}</option>`).join('');}
-async function loadSendCenter(){sendMsg.textContent='발송대상 로딩 중...';try{const r=await server('getSendCenterData',sendMonth.value,sendClass.value);sendMsg.innerHTML=`<div class="ok">${r.monthKey} / ${r.className} / ${r.rows.length}명</div>`;sendList.innerHTML=r.rows.map(x=>`<div class="item"><b>${x.className} ${x.studentName}</b> ${x.temp} 평균 ${x.avgTotal} / 기록 ${x.count}회<br><span class="muted">보호자 ${x.parentName||'-'} / 이메일 ${x.email||'미등록'} / 발송완료 ${x.sent}회</span><br><button onclick="copyOneMessage('${x.studentName}')">문구 복사</button> <button onclick="sendOneEmail('${x.studentName}')">이메일 발송</button></div>`).join('');}catch(e){sendMsg.innerHTML='<div class="error">'+e.message+'</div>';}}
-async function copyOneMessage(name){const r=await server('makeParentMessage',name,sendMonth.value);navigator.clipboard.writeText(r.text);alert(name+' 학부모 문구가 복사되었습니다.');}
-async function sendOneEmail(name){try{const r=await server('sendMonthlyReportEmail',name,sendMonth.value);alert(`${r.studentName} 발송 완료: ${r.email}`);loadSendCenter();}catch(e){alert(e.message);}}
-async function bulkSendEmails(){if(!confirm('현재 조건의 학생들에게 이메일을 일괄 발송할까요?'))return;sendMsg.textContent='일괄 발송 중...';const r=await server('bulkSendMonthlyReportEmails',sendMonth.value,sendClass.value);sendMsg.innerHTML='<div class="ok">일괄 발송 처리 완료</div>';sendList.innerHTML=r.results.map(x=>`<div class="item"><b>${x.studentName}</b> ${x.status||''} ${x.email||''} ${x.message||''}</div>`).join('');}
+let initial={},dash=null,scores={learningHabit:null,focus:null,understanding:null,performance:null};
+function server(fn,...args){return new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(rej)[fn](...args));}
+function showTab(id){['teacher','dashboard','report','send'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));if(id==='send')prepareSendClass();}
+function openAdmin(){loginModal.classList.remove('hidden');adminPin.focus();}function closeLogin(){loginModal.classList.add('hidden');}
+async function doAdminLogin(){const ok=await server('verifyAdminPin',adminPin.value);if(ok){closeLogin();showTab('dashboard');loadDashboard();}else loginMsg.innerHTML='<span class="err">비밀번호가 맞지 않습니다.</span>';}
+async function init(){initial=await server('getInitialData');renderTeachers();renderClasses();renderScores();renderIssues();renderReportStudents();const m=(initial.today||'').slice(0,7);reportMonth.value=m;sendMonth.value=m;}
+function renderTeachers(){teacherName.innerHTML=(initial.teachers||[]).map(t=>`<option>${t['선생님명']}</option>`).join('');}
+function renderClasses(){const cs=[...new Set((initial.students||[]).map(s=>s['반명']).filter(Boolean))].sort();className.innerHTML=cs.map(c=>`<option>${c}</option>`).join('');renderStudents();prepareSendClass();}
+function renderStudents(){const c=className.value;studentName.innerHTML=(initial.students||[]).filter(s=>s['반명']===c).map(s=>`<option>${s['학생명']}</option>`).join('');}
+function renderReportStudents(){reportStudent.innerHTML=(initial.students||[]).map(s=>`<option>${s['학생명']}</option>`).join('');}
+function prepareSendClass(){const cs=[...new Set((initial.students||[]).map(s=>s['반명']).filter(Boolean))].sort();sendClass.innerHTML='<option>전체</option>'+cs.map(c=>`<option>${c}</option>`).join('');}
+function renderScores(){['learningHabit','focus','understanding','performance'].forEach(f=>document.getElementById(f).innerHTML=[1,2,3,4,5].map(n=>`<button onclick="setScore('${f}',${n},this)">${n}</button>`).join(''));}
+function setScore(f,n,b){scores[f]=n;b.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('active'));b.classList.add('active');}
+function renderIssues(){const m=initial.issues||{};issues.innerHTML=Object.keys(m).map(k=>`<button data-code="${k}" onclick="toggleIssue(this)">${k}. ${m[k]}</button>`).join('');}
+function toggleIssue(b){if(b.dataset.code==='0'){document.querySelectorAll('#issues button').forEach(x=>x.classList.remove('active'));b.classList.add('active');return;}document.querySelector('#issues button[data-code="0"]')?.classList.remove('active');b.classList.toggle('active');}
+async function saveEval(){if(Object.values(scores).some(v=>v==null)){alert('점수를 모두 선택해주세요.');return;}const issueCodes=[...document.querySelectorAll('#issues button.active')].map(b=>b.dataset.code);const payload={teacherName:teacherName.value,subject:subject.value,className:className.value,studentName:studentName.value,...scores,issueCodes:issueCodes.length?issueCodes:['0'],memo:memo.value};const r=await server('saveEvaluation',payload);teacherMsg.innerHTML=`<div class="ok">저장 완료: ${r.status} / 평균 ${r.avg}<br>${r.comment}</div>`;memo.value='';}
+async function loadDashboard(){dash=await server('getDashboardData');dashMsg.innerHTML=`<div class="ok">오늘 입력 ${dash.totalToday}건 / 시트 ${dash.spreadsheetId}</div>`;urgentCount.textContent=dash.urgent.length;watchCount.textContent=dash.watch.length;normalCount.textContent=dash.normal.length;todayText.textContent=dash.today;renderList('urgentList',dash.urgent,rowItem);renderList('watchList',dash.watch,rowItem);renderList('classStats',dash.classStats,c=>`<b>${c.className}</b> ${c.recorded}/${c.active}명 (${c.percent}%)`);renderList('teacherStats',dash.teacherStats,t=>`<b>${t.teacherName}</b> ${t.count}건`);renderList('waiting',dash.waitingStudents,w=>`${w.className} ${w.studentName}`);}
+function rowItem(r){return `<b>${r['반명']||''} ${r['학생명']||''}</b> <span class="pill">${r['상태']||''}</span><br><small>${r['과목']||''} / ${r['선생님명']||''} / 평균 ${r['평균']||''} / ${r['특이사항']||''}</small>`;}
+function renderList(id,arr,fn){document.getElementById(id).innerHTML=(arr&&arr.length)?arr.map(x=>`<div class="item">${fn(x)}</div>`).join(''):'<div class="muted">해당 없음</div>';}
+function copyTodaySummary(){if(!dash)return;navigator.clipboard.writeText(`🌳 오늘 성장관리 요약\n총 입력 ${dash.totalToday}건\n집중관리 ${dash.urgent.length}명 / 관심관리 ${dash.watch.length}명 / 정상 ${dash.normal.length}명`);alert('복사되었습니다.');}
+async function previewReport(){const r=await server('getMonthlyReport',reportStudent.value,reportMonth.value);reportResult.innerHTML=`<div class="item"><h3>${r.studentName} ${r.monthKey}</h3><p>${r.temp} / 평가 ${r.count}회 / 평균 ${r.avgTotal}</p><p>${r.comment}</p></div>`;}
+async function makePdf(){const r=await server('createMonthlyPdf',reportStudent.value,reportMonth.value);reportResult.innerHTML=`<div class="ok">PDF 생성 완료<br><a target="_blank" href="${r.fileUrl}">${r.fileName}</a></div>`;}
+async function copyParentMessage(){const r=await server('makeParentMessage',reportStudent.value,reportMonth.value);await navigator.clipboard.writeText(r.text);alert('학부모 문구가 복사되었습니다.');}
+async function loadSendCenter(){const r=await server('getSendCenterData',sendMonth.value,sendClass.value);sendMsg.innerHTML=`<div class="ok">대상 ${r.rows.length}명</div>`;renderList('sendList',r.rows,x=>`<b>${x.className} ${x.studentName}</b> ${x.temp} / 기록 ${x.count}회 / 이메일 ${x.email||'없음'} / 발송 ${x.sent}회 <button onclick="copyOneMessage('${x.studentName}')">문구복사</button> <button onclick="sendOneEmail('${x.studentName}')">메일발송</button>`);}
+async function copyOneMessage(name){const r=await server('makeParentMessage',name,sendMonth.value);await navigator.clipboard.writeText(r.text);alert(`${name} 문구 복사 완료`);}
+async function sendOneEmail(name){const r=await server('sendMonthlyReportEmail',name,sendMonth.value);alert(`${r.studentName} ${r.status}`);loadSendCenter();}
+async function bulkSendEmails(){if(!confirm('이메일 일괄 발송할까요?'))return;const r=await server('bulkSendMonthlyReportEmails',sendMonth.value,sendClass.value);sendMsg.innerHTML=`<div class="ok">일괄 발송 처리 ${r.results.length}건</div>`;loadSendCenter();}
 init();
-</script>
-</body>
-</html>
+</script></body></html>
